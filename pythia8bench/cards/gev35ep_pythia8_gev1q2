@@ -1,0 +1,18 @@
+# S.Chekanov, modified by D. Blyth
+Random:setSeed = on
+Random:seed = 0
+Beams:frameType = 2
+Next:numberShowEvent = 10
+Beams:idA = 2212 
+Beams:idB = 11
+Beams:eA = 60.
+Beams:eB = 5.
+HardQCD:all = off
+PDF:lepton = off
+TimeShower:QEDshowerByL = off
+WeakBosonExchange:ff2ff(t:gmZ) = on
+SpaceShower:dipoleRecoil = on
+PhaseSpace:pTHatMin = 1.
+PDF:pSet = LHAPDF6:CT14lo
+ParticleDecays:limitTau0 = on
+ParticleDecays:tau0Max = 10
