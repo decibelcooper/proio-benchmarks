@@ -37,7 +37,7 @@ RUN sudo pacman -S --noconfirm \
         python2 \
 &&  sudo rm -rf /var/cache/pacman/pkg
 
-RUN git clone http://root.cern.ch/git/root.git \
+RUN git clone https://github.com/root-project/root.git \
 &&  cd root \
 &&  git checkout tags/$ROOT_RELEASE \
 &&  cd .. \
@@ -67,7 +67,7 @@ RUN sudo pacman -S --noconfirm \
 
 # go-proio
 ENV GOPATH=/opt/Go
-ENV GO_PROIO_CHECKOUT=v0.3.0 \
+ENV GO_PROIO_CHECKOUT=38e430738df584770c2e1eb5447c28012d689644 \
     PATH=$GOPATH/bin:${PATH}
 
 RUN sudo pacman -S --noconfirm \
@@ -82,7 +82,7 @@ RUN git clone https://github.com/proio-org/go-proio.git \
 &&  sudo rm -rf go-proio $GOPATH/src $GOPATH/pkg
 
 # py-proio
-ENV PY_PROIO_VERSION=0.12.52
+ENV PY_PROIO_VERSION=0.12.63
 
 RUN sudo pacman -S --noconfirm \
         python-pip \
@@ -93,7 +93,7 @@ RUN sudo pip install proio==$PY_PROIO_VERSION \
 &&  sudo pip2 install proio==$PY_PROIO_VERSION
 
 # cpp-proio
-ENV CPP_PROIO_CHECKOUT=a0a480a77a8dcb664406294204f8dbd782afcc19
+ENV CPP_PROIO_CHECKOUT=0f802248c6f7a680a70f75047a0be9a18dbac84a
 
 RUN git clone https://github.com/proio-org/cpp-proio.git \
 &&  mkdir cpp-proio/build \
@@ -139,13 +139,22 @@ RUN git clone https://github.com/decibelcooper/pythia8.git \
 &&  cd ../ \
 &&  rm -rf pythia8
 
+
+# Convenience tools
+RUN sudo pacman -S --noconfirm \
+        procps-ng \
+&&  sudo rm -rf /var/cache/pacman/pkg
+
 # Run Pythia8
 ADD pythia8bench pythia8bench
 
 RUN sudo chmod o+w pythia8bench \
 &&  cd pythia8bench \
 &&  clang++ -o pythia8bench \
-        main.cc `pythia8-config --cpp-flags --libs` -lprotobuf -lproio -lproio.pb
+        main.cc \
+        `pythia8-config --cpp-flags --libs` \
+        `root-config --cflags --libs` \
+        -lprotobuf -lproio -lproio.pb
 
 RUN cd pythia8bench \
 &&  mkdir gev35ep_pythia8_gev1q2 \
@@ -156,9 +165,3 @@ RUN cd pythia8bench \
 &&  mkdir tev13_pythia8_qcdjet_pt50 \
 &&  cd tev13_pythia8_qcdjet_pt50 \
 &&  ../pythia8bench ../cards/tev13_pythia8_qcdjet_pt50 1000
-
-# Convenience tools
-RUN sudo pacman -S --noconfirm \
-        procps-ng \
-        wget \
-&&  sudo rm -rf /var/cache/pacman/pkg

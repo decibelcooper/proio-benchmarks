@@ -8,10 +8,15 @@
 #include <map>
 
 #include <Pythia8/Pythia.h>
+
 #include <google/protobuf/descriptor.h>
 #include <proio/event.h>
 #include <proio/model/example/example.pb.h>
 #include <proio/writer.h>
+
+#include <TFile.h>
+#include <TTree.h>
+#include <Compression.h>
 
 using namespace google::protobuf;
 namespace model = proio::model::example;
@@ -44,28 +49,66 @@ int main(int argc, char *argv[]) {
     pythia.init();
 
     auto writer = new proio::Writer("particles.proio");
-    auto writerUncomp = new proio::Writer("particles_uncomp.proio");
-    writerUncomp->SetCompression(proio::UNCOMPRESSED);
     auto event = new proio::Event();
     auto partDesc = DescriptorPool::generated_pool()->FindMessageTypeByName("proio.model.example.Particle");
     auto varintWriter = new proio::Writer("varint_particles.proio");
-    auto varintWriterUncomp = new proio::Writer("varint_particles_uncomp.proio");
-    varintWriterUncomp->SetCompression(proio::UNCOMPRESSED);
     auto varintEvent = new proio::Event();
     auto varintPartDesc =
         DescriptorPool::generated_pool()->FindMessageTypeByName("proio.model.example.VarintParticle");
     auto packedWriter = new proio::Writer("packed_particles.proio");
-    auto packedWriterUncomp = new proio::Writer("packed_particles_uncomp.proio");
-    packedWriterUncomp->SetCompression(proio::UNCOMPRESSED);
     auto packedEvent = new proio::Event();
     auto packedParts = new model::PackedParticles();
     auto packedPartsDesc = packedParts->GetDescriptor();
     auto varintPackedWriter = new proio::Writer("varint_packed_particles.proio");
-    auto varintPackedWriterUncomp = new proio::Writer("varint_packed_particles_uncomp.proio");
-    varintPackedWriterUncomp->SetCompression(proio::UNCOMPRESSED);
     auto varintPackedEvent = new proio::Event();
     auto varintPackedParts = new model::VarintPackedParticles();
     auto varintPackedPartsDesc = varintPackedParts->GetDescriptor();
+
+    TFile rootFile("packed_particles.root", "recreate");
+    //rootFile.SetCompressionSettings(ROOT::CompressionSettings(ROOT::kZLIB, 9));
+    auto partTree = new TTree("particles", "Particles");
+    partTree->SetAutoFlush(1000);
+    ROOT::TIOFeatures features;
+    features.Set(ROOT::Experimental::EIOFeatures::kGenerateOffsetMap);
+    partTree->SetIOFeatures(features);
+    uint32_t n;
+    auto nBranch = partTree->Branch("n", &n, "n/i");
+    auto parent1Branch = partTree->Branch("parent1", NULL, "parent1[n]/i");
+    auto parent2Branch = partTree->Branch("parent2", NULL, "parent2[n]/i");
+    auto child1Branch = partTree->Branch("child1", NULL, "child1[n]/i");
+    auto child2Branch = partTree->Branch("child2", NULL, "child2[n]/i");
+    auto pdgBranch = partTree->Branch("pdg", NULL, "pdg[n]/I");
+    auto xBranch = partTree->Branch("x", NULL, "x[n]/F");
+    auto yBranch = partTree->Branch("y", NULL, "y[n]/F");
+    auto zBranch = partTree->Branch("z", NULL, "z[n]/F");
+    auto tBranch = partTree->Branch("t", NULL, "y[n]/F");
+    auto pxBranch = partTree->Branch("px", NULL, "px[n]/F");
+    auto pyBranch = partTree->Branch("py", NULL, "py[n]/F");
+    auto pzBranch = partTree->Branch("pz", NULL, "pz[n]/F");
+    auto massBranch = partTree->Branch("mass", NULL, "mass[n]/F");
+    auto chargeBranch = partTree->Branch("charge", NULL, "charge[n]/i");
+
+    TFile rootFileInt("int_packed_particles.root", "recreate");
+    //rootFileInt.SetCompressionSettings(ROOT::CompressionSettings(ROOT::kZLIB, 9));
+    auto partTreeInt = new TTree("particles", "Particles");
+    partTreeInt->SetAutoFlush(1000);
+    partTreeInt->SetIOFeatures(features);
+    auto nBranchInt = partTreeInt->Branch("n", &n, "n/i");
+    auto parent1BranchInt = partTreeInt->Branch("parent1", NULL, "parent1[n]/i");
+    auto parent2BranchInt = partTreeInt->Branch("parent2", NULL, "parent2[n]/i");
+    auto child1BranchInt = partTreeInt->Branch("child1", NULL, "child1[n]/i");
+    auto child2BranchInt = partTreeInt->Branch("child2", NULL, "child2[n]/i");
+    auto pdgBranchInt = partTreeInt->Branch("pdg", NULL, "pdg[n]/I");
+    auto xBranchInt = partTreeInt->Branch("x", NULL, "x[n]/I");
+    auto yBranchInt = partTreeInt->Branch("y", NULL, "y[n]/I");
+    auto zBranchInt = partTreeInt->Branch("z", NULL, "z[n]/I");
+    auto tBranchInt = partTreeInt->Branch("t", NULL, "y[n]/I");
+    auto pxBranchInt = partTreeInt->Branch("px", NULL, "px[n]/I");
+    auto pyBranchInt = partTreeInt->Branch("py", NULL, "py[n]/I");
+    auto pzBranchInt = partTreeInt->Branch("pz", NULL, "pz[n]/I");
+    auto massBranchInt = partTreeInt->Branch("mass", NULL, "mass[n]/i");
+    auto chargeBranchInt = partTreeInt->Branch("charge", NULL, "charge[n]/i");
+
     for (int i = 0; i < nEvents; i++) {
         if (!pythia.next()) {
             i--;
@@ -106,12 +149,12 @@ int main(int argc, char *argv[]) {
             varintVertex->set_x(pythiaPart.xProd() * 1e3);
             varintVertex->set_y(pythiaPart.yProd() * 1e3);
             varintVertex->set_z(pythiaPart.zProd() * 1e3);
-            varintVertex->set_t(pythiaPart.tProd() / 3e-1);
+            varintVertex->set_t(pythiaPart.tProd() * 1e3);
             auto varintP = varintPart->mutable_p();
-            varintP->set_x(pythiaPart.px() * 1e3);
-            varintP->set_y(pythiaPart.py() * 1e3);
-            varintP->set_z(pythiaPart.pz() * 1e3);
-            varintPart->set_mass(pythiaPart.m() * 1e3);
+            varintP->set_x(pythiaPart.px() * 1e5);
+            varintP->set_y(pythiaPart.py() * 1e5);
+            varintP->set_z(pythiaPart.pz() * 1e5);
+            varintPart->set_mass(pythiaPart.m() * 1e5);
             varintPart->set_charge(3 * pythiaPart.charge());
             varintEvent->AddEntry(varintPart, "Particle");
 
@@ -123,7 +166,7 @@ int main(int argc, char *argv[]) {
             packedParts->add_x(pythiaPart.xProd());
             packedParts->add_y(pythiaPart.yProd());
             packedParts->add_z(pythiaPart.zProd());
-            packedParts->add_t(pythiaPart.tProd() / 3e2);
+            packedParts->add_t(pythiaPart.tProd());
             packedParts->add_px(pythiaPart.px());
             packedParts->add_py(pythiaPart.py());
             packedParts->add_pz(pythiaPart.pz());
@@ -138,44 +181,75 @@ int main(int argc, char *argv[]) {
             varintPackedParts->add_x(pythiaPart.xProd() * 1e3);
             varintPackedParts->add_y(pythiaPart.yProd() * 1e3);
             varintPackedParts->add_z(pythiaPart.zProd() * 1e3);
-            varintPackedParts->add_t(pythiaPart.tProd() / 3e-1);
-            varintPackedParts->add_px(pythiaPart.px() * 1e3);
-            varintPackedParts->add_py(pythiaPart.py() * 1e3);
-            varintPackedParts->add_pz(pythiaPart.pz() * 1e3);
-            varintPackedParts->add_mass(pythiaPart.m() * 1e3);
+            varintPackedParts->add_t(pythiaPart.tProd() * 1e3);
+            varintPackedParts->add_px(pythiaPart.px() * 1e5);
+            varintPackedParts->add_py(pythiaPart.py() * 1e5);
+            varintPackedParts->add_pz(pythiaPart.pz() * 1e5);
+            varintPackedParts->add_mass(pythiaPart.m() * 1e5);
             varintPackedParts->add_charge(3 * pythiaPart.charge());
         }  // end loop over particles
 
         writer->Push(event);
-        writerUncomp->Push(event);
         event->Clear();
         varintWriter->Push(varintEvent);
-        varintWriterUncomp->Push(varintEvent);
         varintEvent->Clear();
         packedEvent->AddEntry(packedParts, "Particle");
         packedWriter->Push(packedEvent);
-        packedWriterUncomp->Push(packedEvent);
         packedEvent->Clear();
         packedParts = (model::PackedParticles *)packedEvent->Free(packedPartsDesc);
         varintPackedEvent->AddEntry(varintPackedParts, "Particle");
         varintPackedWriter->Push(varintPackedEvent);
-        varintPackedWriterUncomp->Push(varintPackedEvent);
         varintPackedEvent->Clear();
         varintPackedParts = (model::VarintPackedParticles *)varintPackedEvent->Free(varintPackedPartsDesc);
+
+        n = pythia.event.size();
+
+        parent1Branch->SetAddress(packedParts->mutable_parent1()->mutable_data());
+        parent2Branch->SetAddress(packedParts->mutable_parent2()->mutable_data());
+        child1Branch->SetAddress(packedParts->mutable_child1()->mutable_data());
+        child2Branch->SetAddress(packedParts->mutable_child2()->mutable_data());
+        pdgBranch->SetAddress(packedParts->mutable_pdg()->mutable_data());
+        xBranch->SetAddress(packedParts->mutable_x()->mutable_data());
+        yBranch->SetAddress(packedParts->mutable_y()->mutable_data());
+        zBranch->SetAddress(packedParts->mutable_z()->mutable_data());
+        tBranch->SetAddress(packedParts->mutable_y()->mutable_data());
+        pxBranch->SetAddress(packedParts->mutable_px()->mutable_data());
+        pyBranch->SetAddress(packedParts->mutable_py()->mutable_data());
+        pzBranch->SetAddress(packedParts->mutable_pz()->mutable_data());
+        massBranch->SetAddress(packedParts->mutable_mass()->mutable_data());
+        chargeBranch->SetAddress(packedParts->mutable_charge()->mutable_data());
+        partTree->Fill();
+
+        parent1BranchInt->SetAddress(varintPackedParts->mutable_parent1()->mutable_data());
+        parent2BranchInt->SetAddress(varintPackedParts->mutable_parent2()->mutable_data());
+        child1BranchInt->SetAddress(varintPackedParts->mutable_child1()->mutable_data());
+        child2BranchInt->SetAddress(varintPackedParts->mutable_child2()->mutable_data());
+        pdgBranchInt->SetAddress(varintPackedParts->mutable_pdg()->mutable_data());
+        xBranchInt->SetAddress(varintPackedParts->mutable_x()->mutable_data());
+        yBranchInt->SetAddress(varintPackedParts->mutable_y()->mutable_data());
+        zBranchInt->SetAddress(varintPackedParts->mutable_z()->mutable_data());
+        tBranchInt->SetAddress(varintPackedParts->mutable_y()->mutable_data());
+        pxBranchInt->SetAddress(varintPackedParts->mutable_px()->mutable_data());
+        pyBranchInt->SetAddress(varintPackedParts->mutable_py()->mutable_data());
+        pzBranchInt->SetAddress(varintPackedParts->mutable_pz()->mutable_data());
+        massBranchInt->SetAddress(varintPackedParts->mutable_mass()->mutable_data());
+        chargeBranchInt->SetAddress(varintPackedParts->mutable_charge()->mutable_data());
+        partTreeInt->Fill();
     }  // end of loop over events
+
+    partTree->Write();
+    partTreeInt->Write();
+    rootFile.Close();
+    rootFileInt.Close();
 
     delete event;
     delete varintEvent;
     delete packedEvent;
     delete varintPackedEvent;
     delete writer;
-    delete writerUncomp;
     delete varintWriter;
-    delete varintWriterUncomp;
     delete packedWriter;
-    delete packedWriterUncomp;
     delete varintPackedWriter;
-    delete varintPackedWriterUncomp;
 
     exit(EXIT_SUCCESS);
 }
