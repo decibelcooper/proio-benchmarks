@@ -14,9 +14,9 @@
 #include <proio/model/example/example.pb.h>
 #include <proio/writer.h>
 
+#include <Compression.h>
 #include <TFile.h>
 #include <TTree.h>
-#include <Compression.h>
 
 using namespace google::protobuf;
 namespace model = proio::model::example;
@@ -48,24 +48,28 @@ int main(int argc, char *argv[]) {
     pythia.readFile(card);
     pythia.init();
 
-    auto writer = new proio::Writer("particles.proio");
+    auto writer = new proio::Writer("particles_uncomp.proio");
+    writer->SetCompression(proio::UNCOMPRESSED);
     auto event = new proio::Event();
     auto partDesc = DescriptorPool::generated_pool()->FindMessageTypeByName("proio.model.example.Particle");
-    auto varintWriter = new proio::Writer("varint_particles.proio");
+    auto varintWriter = new proio::Writer("varint_particles_uncomp.proio");
+    varintWriter->SetCompression(proio::UNCOMPRESSED);
     auto varintEvent = new proio::Event();
     auto varintPartDesc =
         DescriptorPool::generated_pool()->FindMessageTypeByName("proio.model.example.VarintParticle");
-    auto packedWriter = new proio::Writer("packed_particles.proio");
+    auto packedWriter = new proio::Writer("packed_particles_uncomp.proio");
+    packedWriter->SetCompression(proio::UNCOMPRESSED);
     auto packedEvent = new proio::Event();
     auto packedParts = new model::PackedParticles();
     auto packedPartsDesc = packedParts->GetDescriptor();
-    auto varintPackedWriter = new proio::Writer("varint_packed_particles.proio");
+    auto varintPackedWriter = new proio::Writer("varint_packed_particles_uncomp.proio");
+    varintPackedWriter->SetCompression(proio::UNCOMPRESSED);
     auto varintPackedEvent = new proio::Event();
     auto varintPackedParts = new model::VarintPackedParticles();
     auto varintPackedPartsDesc = varintPackedParts->GetDescriptor();
 
-    TFile rootFile("packed_particles.root", "recreate");
-    //rootFile.SetCompressionSettings(ROOT::CompressionSettings(ROOT::kZLIB, 9));
+    TFile rootFile("packed_particles_uncomp.root", "recreate");
+    rootFile.SetCompressionLevel(0);
     auto partTree = new TTree("particles", "Particles");
     partTree->SetAutoFlush(1000);
     ROOT::TIOFeatures features;
@@ -73,41 +77,41 @@ int main(int argc, char *argv[]) {
     partTree->SetIOFeatures(features);
     uint32_t n;
     auto nBranch = partTree->Branch("n", &n, "n/i");
-    auto parent1Branch = partTree->Branch("parent1", NULL, "parent1[n]/i");
-    auto parent2Branch = partTree->Branch("parent2", NULL, "parent2[n]/i");
-    auto child1Branch = partTree->Branch("child1", NULL, "child1[n]/i");
-    auto child2Branch = partTree->Branch("child2", NULL, "child2[n]/i");
-    auto pdgBranch = partTree->Branch("pdg", NULL, "pdg[n]/I");
-    auto xBranch = partTree->Branch("x", NULL, "x[n]/F");
-    auto yBranch = partTree->Branch("y", NULL, "y[n]/F");
-    auto zBranch = partTree->Branch("z", NULL, "z[n]/F");
-    auto tBranch = partTree->Branch("t", NULL, "y[n]/F");
-    auto pxBranch = partTree->Branch("px", NULL, "px[n]/F");
-    auto pyBranch = partTree->Branch("py", NULL, "py[n]/F");
-    auto pzBranch = partTree->Branch("pz", NULL, "pz[n]/F");
-    auto massBranch = partTree->Branch("mass", NULL, "mass[n]/F");
-    auto chargeBranch = partTree->Branch("charge", NULL, "charge[n]/i");
+    auto parent1Branch = partTree->Branch("parent1", 0, "parent1[n]/i");
+    auto parent2Branch = partTree->Branch("parent2", 0, "parent2[n]/i");
+    auto child1Branch = partTree->Branch("child1", 0, "child1[n]/i");
+    auto child2Branch = partTree->Branch("child2", 0, "child2[n]/i");
+    auto pdgBranch = partTree->Branch("pdg", 0, "pdg[n]/I");
+    auto xBranch = partTree->Branch("x", 0, "x[n]/F");
+    auto yBranch = partTree->Branch("y", 0, "y[n]/F");
+    auto zBranch = partTree->Branch("z", 0, "z[n]/F");
+    auto tBranch = partTree->Branch("t", 0, "y[n]/F");
+    auto pxBranch = partTree->Branch("px", 0, "px[n]/F");
+    auto pyBranch = partTree->Branch("py", 0, "py[n]/F");
+    auto pzBranch = partTree->Branch("pz", 0, "pz[n]/F");
+    auto massBranch = partTree->Branch("mass", 0, "mass[n]/F");
+    auto chargeBranch = partTree->Branch("charge", 0, "charge[n]/i");
 
-    TFile rootFileInt("int_packed_particles.root", "recreate");
-    //rootFileInt.SetCompressionSettings(ROOT::CompressionSettings(ROOT::kZLIB, 9));
+    TFile rootFileInt("int_packed_particles_uncomp.root", "recreate");
+    rootFileInt.SetCompressionLevel(0);
     auto partTreeInt = new TTree("particles", "Particles");
     partTreeInt->SetAutoFlush(1000);
     partTreeInt->SetIOFeatures(features);
     auto nBranchInt = partTreeInt->Branch("n", &n, "n/i");
-    auto parent1BranchInt = partTreeInt->Branch("parent1", NULL, "parent1[n]/i");
-    auto parent2BranchInt = partTreeInt->Branch("parent2", NULL, "parent2[n]/i");
-    auto child1BranchInt = partTreeInt->Branch("child1", NULL, "child1[n]/i");
-    auto child2BranchInt = partTreeInt->Branch("child2", NULL, "child2[n]/i");
-    auto pdgBranchInt = partTreeInt->Branch("pdg", NULL, "pdg[n]/I");
-    auto xBranchInt = partTreeInt->Branch("x", NULL, "x[n]/I");
-    auto yBranchInt = partTreeInt->Branch("y", NULL, "y[n]/I");
-    auto zBranchInt = partTreeInt->Branch("z", NULL, "z[n]/I");
-    auto tBranchInt = partTreeInt->Branch("t", NULL, "y[n]/I");
-    auto pxBranchInt = partTreeInt->Branch("px", NULL, "px[n]/I");
-    auto pyBranchInt = partTreeInt->Branch("py", NULL, "py[n]/I");
-    auto pzBranchInt = partTreeInt->Branch("pz", NULL, "pz[n]/I");
-    auto massBranchInt = partTreeInt->Branch("mass", NULL, "mass[n]/i");
-    auto chargeBranchInt = partTreeInt->Branch("charge", NULL, "charge[n]/i");
+    auto parent1BranchInt = partTreeInt->Branch("parent1", 0, "parent1[n]/i");
+    auto parent2BranchInt = partTreeInt->Branch("parent2", 0, "parent2[n]/i");
+    auto child1BranchInt = partTreeInt->Branch("child1", 0, "child1[n]/i");
+    auto child2BranchInt = partTreeInt->Branch("child2", 0, "child2[n]/i");
+    auto pdgBranchInt = partTreeInt->Branch("pdg", 0, "pdg[n]/I");
+    auto xBranchInt = partTreeInt->Branch("x", 0, "x[n]/I");
+    auto yBranchInt = partTreeInt->Branch("y", 0, "y[n]/I");
+    auto zBranchInt = partTreeInt->Branch("z", 0, "z[n]/I");
+    auto tBranchInt = partTreeInt->Branch("t", 0, "t[n]/I");
+    auto pxBranchInt = partTreeInt->Branch("px", 0, "px[n]/I");
+    auto pyBranchInt = partTreeInt->Branch("py", 0, "py[n]/I");
+    auto pzBranchInt = partTreeInt->Branch("pz", 0, "pz[n]/I");
+    auto massBranchInt = partTreeInt->Branch("mass", 0, "mass[n]/i");
+    auto chargeBranchInt = partTreeInt->Branch("charge", 0, "charge[n]/i");
 
     for (int i = 0; i < nEvents; i++) {
         if (!pythia.next()) {
