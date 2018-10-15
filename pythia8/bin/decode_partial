@@ -1,0 +1,21 @@
+#!/bin/bash -x
+
+CURRENT_DIR=`pwd`
+DIR="$1"
+FORMAT="$2"
+
+TMPDIR=`mktemp -d`
+mkdir -p $TMPDIR/$(dirname $DIR)
+mv $DIR $TMPDIR/$DIR
+cd $TMPDIR/$DIR
+
+mkdir -p /mnt/output/$DIR
+
+ENCODED=$(ls *.$FORMAT)
+for file in $ENCODED; do
+    decode_partial_$FORMAT $file >> /mnt/output/$DIR/decode_partial_$FORMAT.csv
+done
+
+cd $CURRENT_DIR
+mv $TMPDIR/$DIR $DIR
+rm -rf $TMPDIR

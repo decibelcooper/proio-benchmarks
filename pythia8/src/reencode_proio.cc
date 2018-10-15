@@ -1,7 +1,12 @@
-// Adapted by D. Blyth from work by J. Blomer
+// By D. Blyth
 
 #include <getopt.h>
 #include <stdio.h>
+#include <sys/resource.h>
+#include <sys/stat.h>
+#include <sys/time.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include <proio/reader.h>
 #include <proio/writer.h>
@@ -14,7 +19,7 @@ int main(int argc, char *argv[]) {
     std::string algorithm;
 
     int opt;
-    while ((opt = getopt(argc, argv, "a:l:h")) != -1) {
+    while ((opt = getopt(argc, argv, "a:h")) != -1) {
         switch (opt) {
             case 'a':
                 algorithm = optarg;
@@ -27,7 +32,7 @@ int main(int argc, char *argv[]) {
 
     std::string inputPath;
     std::string outputPath;
-    if (optind < argc - 1) {
+    if (optind == argc - 2) {
         inputPath = argv[optind];
         outputPath = argv[optind + 1];
     } else {
@@ -44,13 +49,39 @@ int main(int argc, char *argv[]) {
     else if (algorithm.compare("none") == 0)
         writer->SetCompression(proio::UNCOMPRESSED);
     auto event = new proio::Event();
+    int nEvents = 0;
+
+    struct rusage usageBefore;
+    std::memset(&usageBefore, 0, sizeof(usageBefore));
+    struct rusage usageAfter;
+    std::memset(&usageAfter, 0, sizeof(usageAfter));
+    getrusage(RUSAGE_SELF, &usageBefore);
+
     while (true) {
         if (!reader->Next(event)) break;
+
+        for (auto entryID : event->AllEntries()) {
+            auto entry = event->GetEntry(entryID);
+        }
+
         writer->Push(event);
+        nEvents++;
     }
+    writer->Flush();
+
+    getrusage(RUSAGE_SELF, &usageAfter);
+    struct timeval diff;
+    timersub(&usageAfter.ru_utime, &usageBefore.ru_utime, &diff);
+
     delete event;
     delete writer;
     delete reader;
+
+    struct stat buf;
+    stat(outputPath.c_str(), &buf);
+
+    std::cout << outputPath << ", " << buf.st_size << ", " << nEvents / (diff.tv_sec + diff.tv_usec * 1e-6)
+              << std::endl;
 
     exit(EXIT_SUCCESS);
 }

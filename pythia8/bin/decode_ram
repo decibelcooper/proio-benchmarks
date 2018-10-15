@@ -1,0 +1,26 @@
+#!/bin/bash -x
+
+CURRENT_DIR=`pwd`
+DIR="$1"
+FORMAT="$2"
+
+TMPDIR=`mktemp -d`
+mkdir -p $TMPDIR/$(dirname $DIR)
+mv $DIR $TMPDIR/$DIR
+cd $TMPDIR/$DIR
+
+mkdir -p /mnt/output/$DIR
+
+export CPUPROFILE_FREQUENCY=1000
+ENCODED=$(ls *.$FORMAT)
+for file in $ENCODED; do
+    decode_$FORMAT $file >> /mnt/output/$DIR/decode_ram_$FORMAT.csv
+    prof=$file.ram_prof
+    export CPUPROFILE=$prof
+    LD_PRELOAD="/usr/lib/libprofiler.so" decode_$FORMAT $file &> /dev/null
+    google-pprof --pdf $(which decode_$FORMAT) $prof > /mnt/output/$DIR/$prof.pdf 2>/dev/null
+done
+
+cd $CURRENT_DIR
+mv $TMPDIR/$DIR $DIR
+rm -rf $TMPDIR

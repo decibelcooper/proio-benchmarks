@@ -48,27 +48,27 @@ int main(int argc, char *argv[]) {
     pythia.readFile(card);
     pythia.init();
 
-    auto writer = new proio::Writer("particles_uncomp.proio");
+    auto writer = new proio::Writer("particles.proio");
     writer->SetCompression(proio::UNCOMPRESSED);
     auto event = new proio::Event();
     auto partDesc = DescriptorPool::generated_pool()->FindMessageTypeByName("proio.model.example.Particle");
-    auto varintWriter = new proio::Writer("varint_particles_uncomp.proio");
+    auto varintWriter = new proio::Writer("varint_particles.proio");
     varintWriter->SetCompression(proio::UNCOMPRESSED);
     auto varintEvent = new proio::Event();
     auto varintPartDesc =
         DescriptorPool::generated_pool()->FindMessageTypeByName("proio.model.example.VarintParticle");
-    auto packedWriter = new proio::Writer("packed_particles_uncomp.proio");
+    auto packedWriter = new proio::Writer("packed_particles.proio");
     packedWriter->SetCompression(proio::UNCOMPRESSED);
     auto packedEvent = new proio::Event();
     auto packedParts = new model::PackedParticles();
     auto packedPartsDesc = packedParts->GetDescriptor();
-    auto varintPackedWriter = new proio::Writer("varint_packed_particles_uncomp.proio");
+    auto varintPackedWriter = new proio::Writer("varint_packed_particles.proio");
     varintPackedWriter->SetCompression(proio::UNCOMPRESSED);
     auto varintPackedEvent = new proio::Event();
     auto varintPackedParts = new model::VarintPackedParticles();
     auto varintPackedPartsDesc = varintPackedParts->GetDescriptor();
 
-    TFile rootFile("packed_particles_uncomp.root", "recreate");
+    TFile rootFile("packed_particles.root", "recreate");
     rootFile.SetCompressionLevel(0);
     auto partTree = new TTree("particles", "Particles");
     partTree->SetAutoFlush(1000);
@@ -85,14 +85,14 @@ int main(int argc, char *argv[]) {
     auto xBranch = partTree->Branch("x", 0, "x[n]/F");
     auto yBranch = partTree->Branch("y", 0, "y[n]/F");
     auto zBranch = partTree->Branch("z", 0, "z[n]/F");
-    auto tBranch = partTree->Branch("t", 0, "y[n]/F");
+    auto tBranch = partTree->Branch("t", 0, "t[n]/F");
     auto pxBranch = partTree->Branch("px", 0, "px[n]/F");
     auto pyBranch = partTree->Branch("py", 0, "py[n]/F");
     auto pzBranch = partTree->Branch("pz", 0, "pz[n]/F");
     auto massBranch = partTree->Branch("mass", 0, "mass[n]/F");
     auto chargeBranch = partTree->Branch("charge", 0, "charge[n]/i");
 
-    TFile rootFileInt("int_packed_particles_uncomp.root", "recreate");
+    TFile rootFileInt("int_packed_particles.root", "recreate");
     rootFileInt.SetCompressionLevel(0);
     auto partTreeInt = new TTree("particles", "Particles");
     partTreeInt->SetAutoFlush(1000);

@@ -1,0 +1,26 @@
+#!/bin/bash -x
+
+CURRENT_DIR=`pwd`
+DIR="$1"
+COMP_TYPES="$2"
+FORMAT="$3"
+
+TMPDIR=`mktemp -d`
+mkdir -p $TMPDIR/$(dirname $DIR)
+mv $DIR $TMPDIR/$DIR
+cd $TMPDIR/$DIR
+mkdir -p reencoded
+cd reencoded
+
+mkdir -p /mnt/output/$DIR
+
+GENERATED=$(ls ../*.$FORMAT)
+for comp in $COMP_TYPES; do
+    for file in $GENERATED; do
+        reencode_$FORMAT -a $comp $file $(basename -s .$FORMAT $file)_$comp.$FORMAT >> /mnt/output/$DIR/reencode_$FORMAT.csv
+    done
+done
+
+cd $CURRENT_DIR
+mv $TMPDIR/$DIR $DIR
+rm -rf $TMPDIR

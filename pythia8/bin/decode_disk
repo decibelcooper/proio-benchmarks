@@ -1,0 +1,19 @@
+#!/bin/bash -x
+
+DIR="$1"
+FORMAT="$2"
+
+mkdir -p /mnt/output/$DIR
+cd $DIR
+
+export CPUPROFILE_FREQUENCY=1000
+ENCODED=$(ls *.$FORMAT)
+for file in $ENCODED; do
+    sudo bash -c "sync; echo 1 > /writable_proc/sys/vm/drop_caches"
+    decode_$FORMAT $file >> /mnt/output/$DIR/decode_disk_$FORMAT.csv
+    prof=$file.disk_prof
+    export CPUPROFILE=$prof
+    sudo bash -c "sync; echo 1 > /writable_proc/sys/vm/drop_caches"
+    LD_PRELOAD="/usr/lib/libprofiler.so" decode_$FORMAT $file &> /dev/null
+    google-pprof --pdf $(which decode_$FORMAT) $prof > /mnt/output/$DIR/$prof.pdf 2>/dev/null
+done

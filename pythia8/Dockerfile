@@ -26,38 +26,50 @@ RUN git clone https://github.com/decibelcooper/pythia8.git \
 &&  rm -rf pythia8
 
 # Generate data
-ADD generate.cc ./
+ADD src src
 ADD cards cards
 
-RUN g++ -o generate \
-        generate.cc \
+RUN g++ -o bin/generate \
+        -O3 \
+        src/generate.cc \
         `pythia8-config --cpp-flags --libs` \
         `root-config --cflags --libs` \
         -lprotobuf -lproio -lproio.pb
 
 RUN mkdir gev35ep_pythia8_gev1q2 \
 &&  cd gev35ep_pythia8_gev1q2 \
-&&  ../generate ../cards/gev35ep_pythia8_gev1q2 50000
+&&  generate ../cards/gev35ep_pythia8_gev1q2 200000
 
 RUN mkdir tev13_pythia8_qcdjet_pt50 \
 &&  cd tev13_pythia8_qcdjet_pt50 \
-&&  ../generate ../cards/tev13_pythia8_qcdjet_pt50 1000
+&&  generate ../cards/tev13_pythia8_qcdjet_pt50 4000
 
-# Reencode data
-ADD reencode_root.cc ./
+# Reencode tests
+ADD bin bin
 
-RUN g++ -o reencode_root \
-        reencode_root.cc \
-        `root-config --cflags --libs`
-
-RUN cd gev35ep_pythia8_gev1q2 \
-&&  ../reencode_root -a lzma -l 5 int_packed_particles_uncomp.root int_packed_particles_lzma.root
-
-ADD reencode_proio.cc ./
-
-RUN g++ --std=c++11 -o reencode_proio \
-        reencode_proio.cc \
+RUN g++ -o bin/reencode_root \
+        -O3 \
+        src/reencode_root.cc \
+        `root-config --cflags --libs` \
+&&  g++ --std=c++11 -o bin/reencode_proio \
+        -O3 \
+        src/reencode_proio.cc \
         -lproio -lproio.pb -lprotobuf
 
-RUN cd gev35ep_pythia8_gev1q2 \
-&&  ../reencode_proio -a lz4 varint_packed_particles_uncomp.proio varint_packed_particles_lz4.proio
+# Decode tests
+RUN sudo apt-get install --assume-yes \
+        google-perftools \
+        libgoogle-perftools-dev \
+&&  sudo apt-get clean
+
+RUN g++ --std=c++11 -o bin/decode_root \
+        -O3 \
+        src/decode_root.cc \
+        `root-config --cflags --libs` \
+&&  g++ --std=c++11 -o bin/decode_proio \
+        -O3 \
+        src/decode_proio.cc \
+        -lproio -lproio.pb -lprotobuf
+
+# Set default behavior
+CMD bash -v benchmark
