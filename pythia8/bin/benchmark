@@ -6,12 +6,12 @@ reencode tev13_pythia8_qcdjet_pt50 "none lz4 zlib lzma" root
 reencode gev35ep_pythia8_gev1q2 "none lz4 gzip" proio
 reencode tev13_pythia8_qcdjet_pt50 "none lz4 gzip" proio
 
-#decode_ram gev35ep_pythia8_gev1q2/reencoded root
-decode_disk gev35ep_pythia8_gev1q2/reencoded root
-#decode_ram tev13_pythia8_qcdjet_pt50/reencoded root
-decode_disk tev13_pythia8_qcdjet_pt50/reencoded root
+decode_disk /mnt/output/gev35ep_pythia8_gev1q2/reencoded root
+decode_disk /mnt/output/tev13_pythia8_qcdjet_pt50/reencoded root
+decode_disk /mnt/output/gev35ep_pythia8_gev1q2/reencoded proio
+decode_disk /mnt/output/tev13_pythia8_qcdjet_pt50/reencoded proio
 
-#decode_ram gev35ep_pythia8_gev1q2/reencoded proio
-decode_disk gev35ep_pythia8_gev1q2/reencoded proio
-#decode_ram tev13_pythia8_qcdjet_pt50/reencoded proio
-decode_disk tev13_pythia8_qcdjet_pt50/reencoded proio
+decode_ram /mnt/output/gev35ep_pythia8_gev1q2/reencoded root
+decode_ram /mnt/output/tev13_pythia8_qcdjet_pt50/reencoded root
+decode_ram /mnt/output/gev35ep_pythia8_gev1q2/reencoded proio
+decode_ram /mnt/output/tev13_pythia8_qcdjet_pt50/reencoded proio

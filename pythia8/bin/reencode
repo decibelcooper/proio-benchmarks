@@ -12,12 +12,16 @@ cd $TMPDIR/$DIR
 mkdir -p reencoded
 cd reencoded
 
-mkdir -p /mnt/output/$DIR
+mkdir -p /mnt/output/$DIR/reencoded
 
 GENERATED=$(ls ../*.$FORMAT)
 for comp in $COMP_TYPES; do
     for file in $GENERATED; do
-        reencode_$FORMAT -a $comp $file $(basename -s .$FORMAT $file)_$comp.$FORMAT >> /mnt/output/$DIR/reencode_$FORMAT.csv
+        outputFile="/mnt/output/$DIR/reencoded/$(basename -s .$FORMAT $file)_$comp.$FORMAT"
+        outputCSV="/mnt/output/$DIR/reencode_$FORMAT.csv"
+        if [[ ! -f "$outputFile" ]]; then
+            reencode_$FORMAT -a $comp $file $outputFile >> $outputCSV
+        fi
     done
 done
 

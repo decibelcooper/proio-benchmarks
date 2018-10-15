@@ -26,7 +26,7 @@ RUN git clone https://github.com/decibelcooper/pythia8.git \
 &&  rm -rf pythia8
 
 # Generate data
-ADD src src
+ADD src/generate.cc src/
 ADD cards cards
 
 RUN g++ -o bin/generate \
@@ -44,32 +44,43 @@ RUN mkdir tev13_pythia8_qcdjet_pt50 \
 &&  cd tev13_pythia8_qcdjet_pt50 \
 &&  generate ../cards/tev13_pythia8_qcdjet_pt50 4000
 
-# Reencode tests
-ADD bin bin
-
-RUN g++ -o bin/reencode_root \
-        -O3 \
-        src/reencode_root.cc \
-        `root-config --cflags --libs` \
-&&  g++ --std=c++11 -o bin/reencode_proio \
-        -O3 \
-        src/reencode_proio.cc \
-        -lproio -lproio.pb -lprotobuf
-
-# Decode tests
+# Install tools provided by package manager
 RUN sudo apt-get install --assume-yes \
         google-perftools \
         libgoogle-perftools-dev \
 &&  sudo apt-get clean
 
+# Reencode tests
+ADD src/reencode_root.cc src/
+
+RUN g++ -o bin/reencode_root \
+        -O3 \
+        src/reencode_root.cc \
+        `root-config --cflags --libs`
+
+ADD src/reencode_proio.cc src/
+
+RUN g++ --std=c++11 -o bin/reencode_proio \
+        -O3 \
+        src/reencode_proio.cc \
+        -lproio -lproio.pb -lprotobuf
+
+# Decode tests
+ADD src/decode_root.cc src/
+
 RUN g++ --std=c++11 -o bin/decode_root \
         -O3 \
         src/decode_root.cc \
-        `root-config --cflags --libs` \
-&&  g++ --std=c++11 -o bin/decode_proio \
+        `root-config --cflags --libs`
+
+ADD src/decode_proio.cc src/
+
+RUN g++ --std=c++11 -o bin/decode_proio \
         -O3 \
         src/decode_proio.cc \
         -lproio -lproio.pb -lprotobuf
 
 # Set default behavior
+ADD bin bin
+
 CMD bash -v benchmark
