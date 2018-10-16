@@ -48,15 +48,6 @@ int main(int argc, char *argv[]) {
     pythia.readFile(card);
     pythia.init();
 
-    auto writer = new proio::Writer("particles.proio");
-    writer->SetCompression(proio::UNCOMPRESSED);
-    auto event = new proio::Event();
-    auto partDesc = DescriptorPool::generated_pool()->FindMessageTypeByName("proio.model.example.Particle");
-    auto varintWriter = new proio::Writer("varint_particles.proio");
-    varintWriter->SetCompression(proio::UNCOMPRESSED);
-    auto varintEvent = new proio::Event();
-    auto varintPartDesc =
-        DescriptorPool::generated_pool()->FindMessageTypeByName("proio.model.example.VarintParticle");
     auto packedWriter = new proio::Writer("packed_particles.proio");
     packedWriter->SetCompression(proio::UNCOMPRESSED);
     auto packedEvent = new proio::Event();
@@ -122,46 +113,6 @@ int main(int argc, char *argv[]) {
         for (int j = 0; j < pythia.event.size(); j++) {
             Pythia8::Particle &pythiaPart = pythia.event[j];
 
-            auto part = (model::Particle *)event->Free(partDesc);
-            if (!part) part = new model::Particle();
-            if (pythiaPart.mother1() != 0) part->add_parent(pythiaPart.mother1());
-            if (pythiaPart.mother2() != 0) part->add_parent(pythiaPart.mother2());
-            if (pythiaPart.daughter1() != 0) part->add_child(pythiaPart.daughter1());
-            if (pythiaPart.daughter2() != 0) part->add_child(pythiaPart.daughter2());
-            part->set_pdg(pythiaPart.id());
-            auto vertex = part->mutable_vertex();
-            vertex->set_x(pythiaPart.xProd());
-            vertex->set_y(pythiaPart.yProd());
-            vertex->set_z(pythiaPart.zProd());
-            vertex->set_t(pythiaPart.tProd() / 3e2);
-            auto p = part->mutable_p();
-            p->set_x(pythiaPart.px());
-            p->set_y(pythiaPart.py());
-            p->set_z(pythiaPart.pz());
-            part->set_mass(pythiaPart.m());
-            part->set_charge(3 * pythiaPart.charge());
-            event->AddEntry(part, "Particle");
-
-            auto varintPart = (model::VarintParticle *)varintEvent->Free(varintPartDesc);
-            if (!varintPart) varintPart = new model::VarintParticle();
-            if (pythiaPart.mother1() != 0) varintPart->add_parent(pythiaPart.mother1());
-            if (pythiaPart.mother2() != 0) varintPart->add_parent(pythiaPart.mother2());
-            if (pythiaPart.daughter1() != 0) varintPart->add_child(pythiaPart.daughter1());
-            if (pythiaPart.daughter2() != 0) varintPart->add_child(pythiaPart.daughter2());
-            varintPart->set_pdg(pythiaPart.id());
-            auto varintVertex = varintPart->mutable_vertex();
-            varintVertex->set_x(pythiaPart.xProd() * 1e3);
-            varintVertex->set_y(pythiaPart.yProd() * 1e3);
-            varintVertex->set_z(pythiaPart.zProd() * 1e3);
-            varintVertex->set_t(pythiaPart.tProd() * 1e3);
-            auto varintP = varintPart->mutable_p();
-            varintP->set_x(pythiaPart.px() * 1e5);
-            varintP->set_y(pythiaPart.py() * 1e5);
-            varintP->set_z(pythiaPart.pz() * 1e5);
-            varintPart->set_mass(pythiaPart.m() * 1e5);
-            varintPart->set_charge(3 * pythiaPart.charge());
-            varintEvent->AddEntry(varintPart, "Particle");
-
             packedParts->add_parent1(pythiaPart.mother1());
             packedParts->add_parent2(pythiaPart.mother2());
             packedParts->add_child1(pythiaPart.daughter1());
@@ -193,10 +144,6 @@ int main(int argc, char *argv[]) {
             varintPackedParts->add_charge(3 * pythiaPart.charge());
         }  // end loop over particles
 
-        writer->Push(event);
-        event->Clear();
-        varintWriter->Push(varintEvent);
-        varintEvent->Clear();
         packedEvent->AddEntry(packedParts, "Particle");
         packedWriter->Push(packedEvent);
         packedEvent->Clear();
@@ -246,12 +193,8 @@ int main(int argc, char *argv[]) {
     rootFile.Close();
     rootFileInt.Close();
 
-    delete event;
-    delete varintEvent;
     delete packedEvent;
     delete varintPackedEvent;
-    delete writer;
-    delete varintWriter;
     delete packedWriter;
     delete varintPackedWriter;
 

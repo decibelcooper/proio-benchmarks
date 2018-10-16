@@ -6,16 +6,12 @@ FORMAT="$2"
 cd $DIR
 
 outputCSV="decode_disk_$FORMAT.csv"
+rm -f $outputCSV
 if [[ ! -f "$outputCSV" ]]; then
     export CPUPROFILE_FREQUENCY=1000
-    ENCODED=$(ls *.$FORMAT)
+    ENCODED=*.$FORMAT
     for file in $ENCODED; do
         sudo bash -c "sync; echo 1 > /writable_proc/sys/vm/drop_caches"
         decode_$FORMAT $file >> $outputCSV
-        prof=$file.disk_prof
-        export CPUPROFILE=$prof
-        sudo bash -c "sync; echo 1 > /writable_proc/sys/vm/drop_caches"
-        LD_PRELOAD="/usr/lib/libprofiler.so" decode_$FORMAT $file &> /dev/null
-        google-pprof --pdf $(which decode_$FORMAT) $prof > $prof.pdf 2>/dev/null
     done
 fi

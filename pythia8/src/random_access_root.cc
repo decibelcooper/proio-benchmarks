@@ -7,6 +7,7 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <cstdlib>
 #include <iostream>
 
 #include <TFile.h>
@@ -36,6 +37,11 @@ int main(int argc, char *argv[]) {
     }
 
     auto branchBuf = new unsigned char[0x1000000];
+    auto *file = new TFile(inputPath.c_str());
+    TTree *tree = (TTree *)file->Get("particles");
+    long maxNEvents = tree->GetEntries();
+    delete file;
+    int nEvents = 0;
 
     struct rusage usageBefore;
     memset(&usageBefore, 0, sizeof(usageBefore));
@@ -43,15 +49,16 @@ int main(int argc, char *argv[]) {
     memset(&usageAfter, 0, sizeof(usageAfter));
     getrusage(RUSAGE_SELF, &usageBefore);
 
-    TFile file(inputPath.c_str());
-    TTree *tree = (TTree *)file.Get("particles");
+    file = new TFile(inputPath.c_str());
+    tree = (TTree *)file->Get("particles");
     auto branchList = tree->GetListOfBranches();
     for (int i = 0; i < branchList->GetEntries(); i++)
         ((TBranch *)branchList->At(i))->SetAddress(branchBuf + i * 0x100000);
 
-    int nEvents = tree->GetEntries();
-    for (int i = 0; i < nEvents; i++) {
-        tree->GetEntry(i, 1);
+    while (true) {
+        tree->GetEntry(long(maxNEvents * rand() / double(RAND_MAX)), 1);
+        nEvents++;
+        if (nEvents == 100) break;
     }
 
     getrusage(RUSAGE_SELF, &usageAfter);
@@ -62,6 +69,7 @@ int main(int argc, char *argv[]) {
     struct timeval total;
     timeradd(&udiff, &sdiff, &total);
 
+    delete file;
     delete branchBuf;
     struct stat buf;
     stat(inputPath.c_str(), &buf);

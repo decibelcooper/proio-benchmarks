@@ -43,9 +43,9 @@ int main(int argc, char *argv[]) {
     auto reader = new proio::Reader(inputPath);
     auto writer = new proio::Writer(outputPath);
     if (algorithm.compare("gzip") == 0)
-        writer->SetCompression(proio::GZIP);
+        writer->SetCompression(proio::GZIP, 9);
     else if (algorithm.compare("lz4") == 0)
-        writer->SetCompression(proio::LZ4);
+        writer->SetCompression(proio::LZ4, 9);
     else if (algorithm.compare("none") == 0)
         writer->SetCompression(proio::UNCOMPRESSED);
     auto event = new proio::Event();
@@ -59,11 +59,6 @@ int main(int argc, char *argv[]) {
 
     while (true) {
         if (!reader->Next(event)) break;
-
-        for (auto entryID : event->AllEntries()) {
-            auto entry = event->GetEntry(entryID);
-        }
-
         writer->Push(event);
         nEvents++;
     }

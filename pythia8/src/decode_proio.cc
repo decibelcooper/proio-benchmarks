@@ -52,8 +52,12 @@ int main(int argc, char *argv[]) {
     }
 
     getrusage(RUSAGE_SELF, &usageAfter);
-    struct timeval diff;
-    timersub(&usageAfter.ru_utime, &usageBefore.ru_utime, &diff);
+    struct timeval udiff;
+    struct timeval sdiff;
+    timersub(&usageAfter.ru_utime, &usageBefore.ru_utime, &udiff);
+    timersub(&usageAfter.ru_stime, &usageBefore.ru_stime, &sdiff);
+    struct timeval total;
+    timeradd(&udiff, &sdiff, &total);
 
     delete event;
     delete reader;
@@ -61,7 +65,7 @@ int main(int argc, char *argv[]) {
     struct stat buf;
     stat(inputPath.c_str(), &buf);
 
-    std::cout << inputPath << ", " << buf.st_size << ", " << nEvents / (diff.tv_sec + diff.tv_usec * 1e-6)
+    std::cout << inputPath << ", " << buf.st_size << ", " << nEvents / (total.tv_sec + total.tv_usec * 1e-6)
               << std::endl;
 
     exit(EXIT_SUCCESS);

@@ -12,21 +12,17 @@
 #include <ROOT/RSnapshotOptions.hxx>
 
 void printUsage(char **argv) {
-    std::cerr << "Usage: " << argv[0] << " [-a algorithm] [-l level] inputPath outputPath" << std::endl;
+    std::cerr << "Usage: " << argv[0] << " [-a algorithm] inputPath outputPath" << std::endl;
 }
 
 int main(int argc, char *argv[]) {
     std::string algorithm;
-    int level = -1;
 
     int opt;
-    while ((opt = getopt(argc, argv, "a:l:h")) != -1) {
+    while ((opt = getopt(argc, argv, "a:h")) != -1) {
         switch (opt) {
             case 'a':
                 algorithm = optarg;
-                break;
-            case 'l':
-                level = atoi(optarg);
                 break;
             default:
                 printUsage(argv);
@@ -45,15 +41,18 @@ int main(int argc, char *argv[]) {
     }
 
     ROOT::RDF::RSnapshotOptions snapshotOptions;
-    if (algorithm.compare("zlib") == 0)
+    snapshotOptions.fAutoFlush = 1000;
+    if (algorithm.compare("zlib") == 0) {
         snapshotOptions.fCompressionAlgorithm = ROOT::kZLIB;
-    else if (algorithm.compare("lzma") == 0)
+        snapshotOptions.fCompressionLevel = 9;
+    } else if (algorithm.compare("lzma") == 0) {
         snapshotOptions.fCompressionAlgorithm = ROOT::kLZMA;
-    else if (algorithm.compare("lz4") == 0)
+        snapshotOptions.fCompressionLevel = 9;
+    } else if (algorithm.compare("lz4") == 0) {
         snapshotOptions.fCompressionAlgorithm = ROOT::kLZ4;
-    else if (algorithm.compare("none") == 0)
+        snapshotOptions.fCompressionLevel = 12;
+    } else if (algorithm.compare("none") == 0)
         snapshotOptions.fCompressionLevel = 0;
-    if (level >= 0) snapshotOptions.fCompressionLevel = level;
     ROOT::RDataFrame rdf("particles", inputPath);
 
     struct rusage usageBefore;

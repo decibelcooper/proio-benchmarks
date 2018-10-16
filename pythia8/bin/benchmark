@@ -1,17 +1,17 @@
 #!/bin/bash -x
 
-reencode gev35ep_pythia8_gev1q2 "none lz4 zlib lzma" root
-reencode tev13_pythia8_qcdjet_pt50 "none lz4 zlib lzma" root
+umask 0
 
-reencode gev35ep_pythia8_gev1q2 "none lz4 gzip" proio
-reencode tev13_pythia8_qcdjet_pt50 "none lz4 gzip" proio
+for dir in tev13_pythia8_qcdjet_pt50; do
+    reencode $dir "none lz4 zlib lzma" root
+    reencode $dir "none lz4 gzip" proio
 
-decode_disk /mnt/output/gev35ep_pythia8_gev1q2/reencoded root
-decode_disk /mnt/output/tev13_pythia8_qcdjet_pt50/reencoded root
-decode_disk /mnt/output/gev35ep_pythia8_gev1q2/reencoded proio
-decode_disk /mnt/output/tev13_pythia8_qcdjet_pt50/reencoded proio
+    random_access /mnt/output/$dir root
+    random_access /mnt/output/$dir proio
 
-decode_ram /mnt/output/gev35ep_pythia8_gev1q2/reencoded root
-decode_ram /mnt/output/tev13_pythia8_qcdjet_pt50/reencoded root
-decode_ram /mnt/output/gev35ep_pythia8_gev1q2/reencoded proio
-decode_ram /mnt/output/tev13_pythia8_qcdjet_pt50/reencoded proio
+    decode_disk /mnt/output/$dir root
+    decode_disk /mnt/output/$dir proio
+
+    decode_ram /mnt/output/$dir root
+    decode_ram /mnt/output/$dir proio
+done

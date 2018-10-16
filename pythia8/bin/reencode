@@ -1,30 +1,25 @@
 #!/bin/bash -x
 
-CURRENT_DIR=`pwd`
 DIR="$1"
+SOURCE=`realpath $DIR`
 COMP_TYPES="$2"
 FORMAT="$3"
 
-TMPDIR=`mktemp -d`
-mkdir -p $TMPDIR/$(dirname $DIR)
-mv $DIR $TMPDIR/$DIR
-cd $TMPDIR/$DIR
-mkdir -p reencoded
-cd reencoded
+OUTDIR="/mnt/output/$DIR"
+mkdir -p $OUTDIR
+cd $OUTDIR
 
-mkdir -p /mnt/output/$DIR/reencoded
-
-GENERATED=$(ls ../*.$FORMAT)
+GENERATED=$SOURCE/*.$FORMAT
 for comp in $COMP_TYPES; do
     for file in $GENERATED; do
-        outputFile="/mnt/output/$DIR/reencoded/$(basename -s .$FORMAT $file)_$comp.$FORMAT"
-        outputCSV="/mnt/output/$DIR/reencode_$FORMAT.csv"
+        outputFile=$(basename -s .$FORMAT $file)_$comp.$FORMAT
+        outputCSV=reencode_$FORMAT.csv
+        prof=$outputFile.reencode_prof
+        export CPUPROFILE=$prof
         if [[ ! -f "$outputFile" ]]; then
-            reencode_$FORMAT -a $comp $file $outputFile >> $outputCSV
+            LD_PRELOAD="/usr/lib/libprofiler.so" reencode_$FORMAT -a $comp $file $outputFile >> $outputCSV 2>/dev/null
+            google-pprof --pdf $(which reencode_$FORMAT) $prof > $prof.pdf 2>/dev/null
         fi
+        rm -f *.reencode_prof *.reencode_prof_[0-9]*
     done
 done
-
-cd $CURRENT_DIR
-mv $TMPDIR/$DIR $DIR
-rm -rf $TMPDIR

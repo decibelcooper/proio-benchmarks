@@ -36,13 +36,9 @@ RUN g++ -o bin/generate \
         `root-config --cflags --libs` \
         -lprotobuf -lproio -lproio.pb
 
-RUN mkdir gev35ep_pythia8_gev1q2 \
-&&  cd gev35ep_pythia8_gev1q2 \
-&&  generate ../cards/gev35ep_pythia8_gev1q2 200000
-
 RUN mkdir tev13_pythia8_qcdjet_pt50 \
 &&  cd tev13_pythia8_qcdjet_pt50 \
-&&  generate ../cards/tev13_pythia8_qcdjet_pt50 4000
+&&  generate ../cards/tev13_pythia8_qcdjet_pt50 8000
 
 # Install tools provided by package manager
 RUN sudo apt-get install --assume-yes \
@@ -78,6 +74,21 @@ ADD src/decode_proio.cc src/
 RUN g++ --std=c++11 -o bin/decode_proio \
         -O3 \
         src/decode_proio.cc \
+        -lproio -lproio.pb -lprotobuf
+
+# Random access tests
+ADD src/random_access_root.cc src/
+
+RUN g++ --std=c++11 -o bin/random_access_root \
+        -O3 \
+        src/random_access_root.cc \
+        `root-config --cflags --libs`
+
+ADD src/random_access_proio.cc src/
+
+RUN g++ --std=c++11 -o bin/random_access_proio \
+        -O3 \
+        src/random_access_proio.cc \
         -lproio -lproio.pb -lprotobuf
 
 # Set default behavior

@@ -66,7 +66,7 @@ ENV PY_PROIO_VERSION=0.12.63
 RUN sudo pip install proio==$PY_PROIO_VERSION
 
 # cpp-proio
-ENV CPP_PROIO_CHECKOUT=48fcb18ffe3d29c85b2f0183dbffa407b0662582
+ENV CPP_PROIO_CHECKOUT=f0b989d55da5d8aba8ae35e096e729fdf0d21814
 
 RUN git clone https://github.com/proio-org/cpp-proio.git \
 &&  mkdir cpp-proio/build \
