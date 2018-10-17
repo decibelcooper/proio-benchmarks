@@ -4,8 +4,8 @@
 #include <stdio.h>
 #include <sys/resource.h>
 #include <sys/stat.h>
-#include <sys/time.h>
 #include <sys/types.h>
+#include <time.h>
 #include <unistd.h>
 
 #include <ROOT/RDataFrame.hxx>
@@ -55,22 +55,26 @@ int main(int argc, char *argv[]) {
         snapshotOptions.fCompressionLevel = 0;
     ROOT::RDataFrame rdf("particles", inputPath);
 
-    struct rusage usageBefore;
-    std::memset(&usageBefore, 0, sizeof(usageBefore));
-    struct rusage usageAfter;
-    std::memset(&usageAfter, 0, sizeof(usageAfter));
-    getrusage(RUSAGE_SELF, &usageBefore);
+    struct timespec procTimeBefore;
+    struct timespec procTimeAfter;
+    struct timespec monoTimeBefore;
+    struct timespec monoTimeAfter;
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &procTimeBefore);
+    clock_gettime(CLOCK_MONOTONIC, &monoTimeBefore);
 
     auto nEvents = rdf.Snapshot("particles", outputPath, "", snapshotOptions)->Count();
 
-    getrusage(RUSAGE_SELF, &usageAfter);
-    struct timeval diff;
-    timersub(&usageAfter.ru_utime, &usageBefore.ru_utime, &diff);
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &procTimeAfter);
+    clock_gettime(CLOCK_MONOTONIC, &monoTimeAfter);
 
     struct stat buf;
     stat(outputPath.c_str(), &buf);
 
-    std::cout << outputPath << ", " << buf.st_size << ", " << *nEvents / (diff.tv_sec + diff.tv_usec * 1e-6)
+    std::cout << outputPath << ", " << buf.st_size << ", "
+              << nEvents / double(procTimeAfter.tv_sec - procTimeBefore.tv_sec +
+                                  (procTimeAfter.tv_nsec - procTimeBefore.tv_nsec) * 1e-9)
+              << nEvents / double(monoTimeAfter.tv_sec - monoTimeBefore.tv_sec +
+                                  (monoTimeAfter.tv_nsec - monoTimeBefore.tv_nsec) * 1e-9)
               << std::endl;
 
     exit(EXIT_SUCCESS);

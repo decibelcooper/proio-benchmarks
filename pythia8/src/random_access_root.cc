@@ -4,8 +4,8 @@
 #include <stdio.h>
 #include <sys/resource.h>
 #include <sys/stat.h>
-#include <sys/time.h>
 #include <sys/types.h>
+#include <time.h>
 #include <unistd.h>
 #include <cstdlib>
 #include <iostream>
@@ -43,11 +43,12 @@ int main(int argc, char *argv[]) {
     delete file;
     int nEvents = 0;
 
-    struct rusage usageBefore;
-    memset(&usageBefore, 0, sizeof(usageBefore));
-    struct rusage usageAfter;
-    memset(&usageAfter, 0, sizeof(usageAfter));
-    getrusage(RUSAGE_SELF, &usageBefore);
+    struct timespec procTimeBefore;
+    struct timespec procTimeAfter;
+    struct timespec monoTimeBefore;
+    struct timespec monoTimeAfter;
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &procTimeBefore);
+    clock_gettime(CLOCK_MONOTONIC, &monoTimeBefore);
 
     file = new TFile(inputPath.c_str());
     tree = (TTree *)file->Get("particles");
@@ -61,20 +62,19 @@ int main(int argc, char *argv[]) {
         if (nEvents == 100) break;
     }
 
-    getrusage(RUSAGE_SELF, &usageAfter);
-    struct timeval udiff;
-    struct timeval sdiff;
-    timersub(&usageAfter.ru_utime, &usageBefore.ru_utime, &udiff);
-    timersub(&usageAfter.ru_stime, &usageBefore.ru_stime, &sdiff);
-    struct timeval total;
-    timeradd(&udiff, &sdiff, &total);
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &procTimeAfter);
+    clock_gettime(CLOCK_MONOTONIC, &monoTimeAfter);
 
     delete file;
     delete branchBuf;
     struct stat buf;
     stat(inputPath.c_str(), &buf);
 
-    std::cout << inputPath << ", " << buf.st_size << ", " << nEvents / (total.tv_sec + total.tv_usec * 1e-6)
+    std::cout << inputPath << ", " << buf.st_size << ", "
+              << nEvents / double(procTimeAfter.tv_sec - procTimeBefore.tv_sec +
+                                  (procTimeAfter.tv_nsec - procTimeBefore.tv_nsec) * 1e-9)
+              << nEvents / double(monoTimeAfter.tv_sec - monoTimeBefore.tv_sec +
+                                  (monoTimeAfter.tv_nsec - monoTimeBefore.tv_nsec) * 1e-9)
               << std::endl;
 
     exit(EXIT_SUCCESS);

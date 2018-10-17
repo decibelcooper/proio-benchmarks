@@ -4,8 +4,8 @@
 #include <stdio.h>
 #include <sys/resource.h>
 #include <sys/stat.h>
-#include <sys/time.h>
 #include <sys/types.h>
+#include <time.h>
 #include <unistd.h>
 
 #include <proio/reader.h>
@@ -40,16 +40,12 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
 
-    auto reader = new proio::Reader(inputPath);
-    auto writer = new proio::Writer(outputPath);
-    if (algorithm.compare("gzip") == 0)
-        writer->SetCompression(proio::GZIP, 7);
-    else if (algorithm.compare("lz4") == 0)
-        writer->SetCompression(proio::LZ4, 9);
-    else if (algorithm.compare("none") == 0)
-        writer->SetCompression(proio::UNCOMPRESSED);
-    auto event = new proio::Event();
-    int nEvents = 0;
+    struct timespec procTimeBefore;
+    struct timespec procTimeAfter;
+    struct timespec monoTimeBefore;
+    struct timespec monoTimeAfter;
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &procTimeBefore);
+    clock_gettime(CLOCK_MONOTONIC, &monoTimeBefore);
 
     struct rusage usageBefore;
     std::memset(&usageBefore, 0, sizeof(usageBefore));
@@ -64,9 +60,8 @@ int main(int argc, char *argv[]) {
     }
     writer->Flush();
 
-    getrusage(RUSAGE_SELF, &usageAfter);
-    struct timeval diff;
-    timersub(&usageAfter.ru_utime, &usageBefore.ru_utime, &diff);
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &procTimeAfter);
+    clock_gettime(CLOCK_MONOTONIC, &monoTimeAfter);
 
     delete event;
     delete writer;
@@ -75,7 +70,11 @@ int main(int argc, char *argv[]) {
     struct stat buf;
     stat(outputPath.c_str(), &buf);
 
-    std::cout << outputPath << ", " << buf.st_size << ", " << nEvents / (diff.tv_sec + diff.tv_usec * 1e-6)
+    std::cout << outputPath << ", " << buf.st_size << ", "
+              << nEvents / double(procTimeAfter.tv_sec - procTimeBefore.tv_sec +
+                                  (procTimeAfter.tv_nsec - procTimeBefore.tv_nsec) * 1e-9)
+              << nEvents / double(monoTimeAfter.tv_sec - monoTimeBefore.tv_sec +
+                                  (monoTimeAfter.tv_nsec - monoTimeBefore.tv_nsec) * 1e-9)
               << std::endl;
 
     exit(EXIT_SUCCESS);
