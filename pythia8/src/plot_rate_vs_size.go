@@ -2,8 +2,13 @@ package main
 
 import (
 	"encoding/csv"
+	"flag"
+	"fmt"
+	"image/color"
+	"log"
 	"math"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -13,35 +18,68 @@ import (
 	"gonum.org/v1/plot/vg/draw"
 )
 
+func printUsage() {
+	fmt.Fprintf(os.Stderr, `Usage: `+os.Args[0]+` [options] <csv-input-files>...
+options:
+`,
+	)
+	flag.PrintDefaults()
+}
+
+var (
+	output    = flag.String("output", "out.png", "output file")
+	logYScale = flag.Bool("logy", false, "logarithmic Y scale")
+)
+
 type XY struct{ X, Y float64 }
 
 func main() {
+	flag.Usage = printUsage
+	flag.Parse()
+	if flag.NArg() < 1 {
+		printUsage()
+		log.Fatal("Invalid arguments")
+	}
+
 	axisFont, _ := vg.MakeFont("Times-Roman", 10)
 	tickFont, _ := vg.MakeFont("Times-Roman", 8)
+	legendFont, _ := vg.MakeFont("Times-Roman", 8)
 
 	p, _ := plot.New()
-	p.X.Label.Text = "File Size (Bytes)"
+	p.X.Label.Text = "File Size (MB)"
 	p.X.Label.Font = axisFont
 	p.Y.Label.Text = "Event Rate (Hz)"
 	p.Y.Label.Font = axisFont
 	p.X.Min = 0
 	p.Y.Min = 0
-	p.X.Tick.Marker = PreciseTicks{}
-	p.Y.Tick.Marker = PreciseTicks{}
+	p.X.Tick.Marker = PreciseTicks{NSuggestedTicks: 4}
+	p.Y.Tick.Marker = PreciseTicks{NSuggestedTicks: 4}
 	p.X.Tick.Label.Font = tickFont
 	p.Y.Tick.Label.Font = tickFont
+	p.Legend.Font = legendFont
 
-	for i := 1; i < len(os.Args); i++ {
-		csvPath := os.Args[i]
+	if *logYScale {
+		p.Y.Scale = LogScale{}
+		p.Y.Tick.Marker = LogTicks{}
+		p.Y.Min = math.Inf(1)
+	}
+
+	for i := 0; i < flag.NArg(); i++ {
+		csvPath := flag.Arg(i)
 		csvFile, _ := os.Open(csvPath)
 		csvReader := csv.NewReader(csvFile)
 		records, _ := csvReader.ReadAll()
 
 		var pts plotter.XYs
 		var intPts plotter.XYs
+		labelSuffix := "proio"
+		if strings.HasSuffix(csvPath, "_root.csv") {
+			labelSuffix = "root"
+		}
 		for _, record := range records {
 			var pt XY
 			pt.X, _ = strconv.ParseFloat(strings.Replace(record[1], " ", "", -1), 64)
+			pt.X /= (1 << 20)
 			pt.Y, _ = strconv.ParseFloat(strings.Replace(record[2], " ", "", -1), 64)
 			if strings.HasPrefix(record[0], "packed_") {
 				pts = append(pts, pt)
@@ -49,23 +87,39 @@ func main() {
 				intPts = append(intPts, pt)
 			}
 		}
+		sort.Slice(pts, func(i, j int) bool { return pts[i].X < pts[j].X })
+		sort.Slice(intPts, func(i, j int) bool { return intPts[i].X < intPts[j].X })
 
-		s, _ := plotter.NewScatter(pts)
-		intS, _ := plotter.NewScatter(intPts)
-		switch i {
-		case 1:
+		l, s, _ := plotter.NewLinePoints(pts)
+		l.LineStyle.Width = 0.5
+		intL, intS, _ := plotter.NewLinePoints(intPts)
+		intL.LineStyle.Width = 0.5
+		if labelSuffix == "proio" {
+			pointColor := color.RGBA{B: 255, A: 255}
 			s.GlyphStyle.Shape = draw.CircleGlyph{}
+			s.GlyphStyle.Color = pointColor
 			intS.GlyphStyle.Shape = draw.RingGlyph{}
-		case 2:
+			intS.GlyphStyle.Color = pointColor
+			lineColor := color.RGBA{B: 255, A: 50}
+			l.LineStyle.Color = lineColor
+			intL.LineStyle.Color = lineColor
+		} else {
+			pointColor := color.RGBA{A: 255}
 			s.GlyphStyle.Shape = draw.PlusGlyph{}
+			s.GlyphStyle.Color = pointColor
 			intS.GlyphStyle.Shape = draw.CrossGlyph{}
+			intS.GlyphStyle.Color = pointColor
+			lineColor := color.RGBA{A: 50}
+			l.LineStyle.Color = lineColor
+			intL.LineStyle.Color = lineColor
 		}
 
-		p.Add(s)
-		p.Add(intS)
+		p.Add(l, s, intL, intS)
+		p.Legend.Add(labelSuffix, l, s)
+		p.Legend.Add("integer "+labelSuffix, intL, intS)
 	}
 
-	p.Save(3*vg.Inch, 3*vg.Inch, "out.pdf")
+	p.Save(3*vg.Inch, 3*vg.Inch, *output)
 }
 
 type PreciseTicks struct {
@@ -110,7 +164,7 @@ func (t PreciseTicks) Ticks(min, max float64) []plot.Tick {
 	var ticks []plot.Tick
 	for _, v := range labels {
 		vRounded := round(v, prec)
-		ticks = append(ticks, plot.Tick{Value: vRounded, Label: formatFloatTick(vRounded, -1)})
+		ticks = append(ticks, plot.Tick{Value: vRounded, Label: strconv.FormatFloat(vRounded, 'g', -1, 64)})
 	}
 	minorDelta := majorDelta / 2
 	switch majorMult {
@@ -133,6 +187,26 @@ func (t PreciseTicks) Ticks(min, max float64) []plot.Tick {
 		}
 		val += minorDelta
 	}
+	return ticks
+}
+
+type LogTicks struct{}
+
+func (LogTicks) Ticks(min, max float64) []plot.Tick {
+	val := math.Pow10(int(log10(min)))
+	max = math.Pow10(int(math.Ceil(log10(max))))
+	var ticks []plot.Tick
+	for val < max {
+		for i := 1; i < 10; i++ {
+			if i == 1 {
+				ticks = append(ticks, plot.Tick{Value: val, Label: strconv.FormatFloat(val, 'e', -1, 64)})
+			}
+			ticks = append(ticks, plot.Tick{Value: val * float64(i)})
+		}
+		val *= 10
+	}
+	ticks = append(ticks, plot.Tick{Value: val, Label: strconv.FormatFloat(val, 'e', -1, 64)})
+
 	return ticks
 }
 
@@ -164,6 +238,16 @@ func round(x float64, prec int) float64 {
 	return x / pow
 }
 
-func formatFloatTick(v float64, prec int) string {
-	return strconv.FormatFloat(v, 'g', prec, 64)
+type LogScale struct{}
+
+func (LogScale) Normalize(min, max, x float64) float64 {
+	logMin := log10(min)
+	return (log10(x) - logMin) / (log10(max) - logMin)
+}
+
+func log10(x float64) float64 {
+	if x <= 0 {
+		return -1
+	}
+	return math.Log10(x)
 }
