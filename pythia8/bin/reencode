@@ -5,6 +5,7 @@ SOURCE=`realpath $DIR`
 COMP_TYPES="$2"
 FORMAT="$3"
 
+TMPDIR=`mktemp -d`
 OUTDIR="/mnt/output/$DIR"
 mkdir -p $OUTDIR
 cd $OUTDIR
@@ -17,9 +18,13 @@ for comp in $COMP_TYPES; do
         prof=$outputFile.reencode_prof
         export CPUPROFILE=$prof
         if [[ ! -f "$outputFile" ]]; then
-            LD_PRELOAD="/usr/lib/libprofiler.so" reencode_$FORMAT -a $comp $file $outputFile >> $outputCSV 2>/dev/null
+            tmpfile=$TMPDIR/tmpfile
+            cp $file $tmpfile
+            LD_PRELOAD="/usr/lib/libprofiler.so" reencode_$FORMAT -a $comp $tmpfile $outputFile >> $outputCSV 2>/dev/null
             google-pprof --pdf $(which reencode_$FORMAT) $prof > $prof.pdf 2>/dev/null
         fi
         rm -f *.reencode_prof *.reencode_prof_[0-9]*
     done
 done
+
+rm -rf $TMPDIR

@@ -41,16 +41,16 @@ int main(int argc, char *argv[]) {
     }
 
     ROOT::RDF::RSnapshotOptions snapshotOptions;
-    snapshotOptions.fAutoFlush = 1000;
+    // snapshotOptions.fAutoFlush = 1000;
     if (algorithm.compare("zlib") == 0) {
         snapshotOptions.fCompressionAlgorithm = ROOT::kZLIB;
-        snapshotOptions.fCompressionLevel = 9;
+        snapshotOptions.fCompressionLevel = 7;
     } else if (algorithm.compare("lzma") == 0) {
         snapshotOptions.fCompressionAlgorithm = ROOT::kLZMA;
         snapshotOptions.fCompressionLevel = 9;
     } else if (algorithm.compare("lz4") == 0) {
         snapshotOptions.fCompressionAlgorithm = ROOT::kLZ4;
-        snapshotOptions.fCompressionLevel = 12;
+        snapshotOptions.fCompressionLevel = 9;
     } else if (algorithm.compare("none") == 0)
         snapshotOptions.fCompressionLevel = 0;
     ROOT::RDataFrame rdf("particles", inputPath);

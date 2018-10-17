@@ -4,21 +4,22 @@ DIR=`realpath $1`
 FORMAT="$2"
 
 TMPDIR=`mktemp -d`
-mkdir -p $TMPDIR/$(dirname $DIR)
-cp -r $DIR $TMPDIR/$DIR
-cd $TMPDIR/$DIR
+cd $TMPDIR
 
 outputCSV="$DIR/decode_ram_$FORMAT.csv"
 rm -f $outputCSV
 if [[ ! -f "$outputCSV" ]]; then
     export CPUPROFILE_FREQUENCY=1000
-    ENCODED=*.$FORMAT
+    ENCODED=$DIR/*.$FORMAT
     for file in $ENCODED; do
-        decode_$FORMAT $file >> $outputCSV
-        prof=$file.ram_prof
+        tmpfile=$(basename $file)
+        cp $file $tmpfile
+        decode_$FORMAT $tmpfile >> $outputCSV
+        prof=$tmpfile.ram_prof
         export CPUPROFILE=$prof
-        LD_PRELOAD="/usr/lib/libprofiler.so" decode_$FORMAT $file &> /dev/null
+        LD_PRELOAD="/usr/lib/libprofiler.so" decode_$FORMAT $tmpfile &> /dev/null
         google-pprof --pdf $(which decode_$FORMAT) $prof > $DIR/$prof.pdf 2>/dev/null
+        rm $tmpfile
     done
 fi
 

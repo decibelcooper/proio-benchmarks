@@ -43,7 +43,7 @@ int main(int argc, char *argv[]) {
     auto reader = new proio::Reader(inputPath);
     auto writer = new proio::Writer(outputPath);
     if (algorithm.compare("gzip") == 0)
-        writer->SetCompression(proio::GZIP, 9);
+        writer->SetCompression(proio::GZIP, 7);
     else if (algorithm.compare("lz4") == 0)
         writer->SetCompression(proio::LZ4, 9);
     else if (algorithm.compare("none") == 0)

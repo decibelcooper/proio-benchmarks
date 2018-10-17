@@ -4,21 +4,22 @@ DIR=`realpath $1`
 FORMAT="$2"
 
 TMPDIR=`mktemp -d`
-mkdir -p $TMPDIR/$(dirname $DIR)
-cp -r $DIR $TMPDIR/$DIR
-cd $TMPDIR/$DIR
+cd $TMPDIR
 
 outputCSV="$DIR/random_access_$FORMAT.csv"
 rm -f $outputCSV
 if [[ ! -f "$outputCSV" ]]; then
     export CPUPROFILE_FREQUENCY=1000
-    ENCODED=*.$FORMAT
+    ENCODED=$DIR/*.$FORMAT
     for file in $ENCODED; do
-        random_access_$FORMAT $file >> $outputCSV
-        prof=$file.random_access_prof
+        tmpfile=$(basename $file)
+        cp $file $tmpfile
+        random_access_$FORMAT $tmpfile >> $outputCSV
+        prof=$tmpfile.random_access_prof
         export CPUPROFILE=$prof
-        LD_PRELOAD="/usr/lib/libprofiler.so" random_access_$FORMAT $file &> /dev/null
+        LD_PRELOAD="/usr/lib/libprofiler.so" random_access_$FORMAT $tmpfile &> /dev/null
         google-pprof --pdf $(which random_access_$FORMAT) $prof > $DIR/$prof.pdf 2>/dev/null
+        rm $tmpfile
     done
 fi
 

@@ -38,7 +38,7 @@ RUN g++ -o bin/generate \
 
 RUN mkdir tev13_pythia8_qcdjet_pt50 \
 &&  cd tev13_pythia8_qcdjet_pt50 \
-&&  generate ../cards/tev13_pythia8_qcdjet_pt50 8000
+&&  generate ../cards/tev13_pythia8_qcdjet_pt50 16000
 
 # Install tools provided by package manager
 RUN sudo apt-get install --assume-yes \
