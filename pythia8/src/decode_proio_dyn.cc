@@ -8,16 +8,14 @@
 #include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
-#include <iostream>
 
-#include <TFile.h>
-#include <TTree.h>
+#include <proio/reader.h>
+#include <proio/writer.h>
 
 void printUsage(char **argv) { std::cerr << "Usage: " << argv[0] << " inputPath" << std::endl; }
 
 int main(int argc, char *argv[]) {
     std::string algorithm;
-    int level = -1;
 
     int opt;
     while ((opt = getopt(argc, argv, "h")) != -1) {
@@ -36,7 +34,9 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
 
-    auto branchBuf = new unsigned char[0x1000000];
+    auto event = new proio::Event();
+    event->UseGeneratedPool(false);
+    int nEvents = 0;
 
     struct rusage usageBefore;
     struct rusage usageAfter;
@@ -45,15 +45,13 @@ int main(int argc, char *argv[]) {
     getrusage(RUSAGE_SELF, &usageBefore);
     clock_gettime(CLOCK_MONOTONIC, &monoTimeBefore);
 
-    TFile file(inputPath.c_str());
-    TTree *tree = (TTree *)file.Get("particles");
-    auto branchList = tree->GetListOfBranches();
-    for (int i = 0; i < branchList->GetEntries(); i++)
-        ((TBranch *)branchList->At(i))->SetAddress(branchBuf + i * 0x100000);
+    auto reader = new proio::Reader(inputPath);
+    while (true) {
+        if (!reader->Next(event)) break;
 
-    int nEvents = tree->GetEntries();
-    for (int i = 0; i < nEvents; i++) {
-        tree->GetEntry(i, 1);
+        for (auto entryID : event->AllEntries()) event->GetEntry(entryID);
+
+        nEvents++;
     }
 
     getrusage(RUSAGE_SELF, &usageAfter);
@@ -61,7 +59,9 @@ int main(int argc, char *argv[]) {
     struct timeval udiff;
     timersub(&usageAfter.ru_utime, &usageBefore.ru_utime, &udiff);
 
-    delete branchBuf;
+    delete event;
+    delete reader;
+
     struct stat buf;
     stat(inputPath.c_str(), &buf);
 

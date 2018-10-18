@@ -46,50 +46,37 @@ RUN sudo apt-get install --assume-yes \
         libgoogle-perftools-dev \
 &&  sudo apt-get clean
 
-# Reencode tests
-ADD src/reencode_root.cc src/
+# Compile tests
+ADD src src
 
 RUN g++ -o bin/reencode_root \
         -O3 \
         src/reencode_root.cc \
-        `root-config --cflags --libs`
-
-ADD src/reencode_proio.cc src/
-
-RUN g++ --std=c++11 -o bin/reencode_proio \
+        `root-config --cflags --libs` \
+&&  g++ --std=c++11 -o bin/reencode_proio \
         -O3 \
         src/reencode_proio.cc \
-        -lproio -lproio.pb -lprotobuf
-
-# Decode tests
-ADD src/decode_root.cc src/
-
-RUN g++ --std=c++11 -o bin/decode_root \
+        -lproio \
+&&  g++ --std=c++11 -o bin/decode_root \
         -O3 \
         src/decode_root.cc \
-        `root-config --cflags --libs`
-
-ADD src/decode_proio.cc src/
-
-RUN g++ --std=c++11 -o bin/decode_proio \
+        `root-config --cflags --libs` \
+&&  g++ --std=c++11 -o bin/decode_proio \
         -O3 \
         src/decode_proio.cc \
-        -lproio -lproio.pb -lprotobuf
-
-# Random access tests
-ADD src/random_access_root.cc src/
-
-RUN g++ --std=c++11 -o bin/random_access_root \
+        -lproio -lproio.pb \
+&&  g++ --std=c++11 -o bin/decode_proio_dyn \
+        -O3 \
+        src/decode_proio_dyn.cc \
+        -lproio \
+&&  g++ --std=c++11 -o bin/random_access_root \
         -O3 \
         src/random_access_root.cc \
-        `root-config --cflags --libs`
-
-ADD src/random_access_proio.cc src/
-
-RUN g++ --std=c++11 -o bin/random_access_proio \
+        `root-config --cflags --libs` \
+&&  g++ --std=c++11 -o bin/random_access_proio \
         -O3 \
         src/random_access_proio.cc \
-        -lproio -lproio.pb -lprotobuf
+        -lproio -lproio.pb
 
 # Set default behavior
 ADD bin bin

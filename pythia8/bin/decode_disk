@@ -2,16 +2,23 @@
 
 DIR="$1"
 FORMAT="$2"
+DECODER_SUFFIX="$3"
 
 cd $DIR
 
-outputCSV="decode_disk_$FORMAT.csv"
+decoder="decode_${FORMAT}${DECODER_SUFFIX}"
+outputCSV="${decoder}.csv"
 rm -f $outputCSV
 if [[ ! -f "$outputCSV" ]]; then
-    export CPUPROFILE_FREQUENCY=1000
     ENCODED=*.$FORMAT
     for file in $ENCODED; do
         sudo bash -c "sync; echo 1 > /writable_proc/sys/vm/drop_caches"
-        decode_$FORMAT $file >> $outputCSV
+        $decoder $file >> $outputCSV
+        prof=$file.${decoder}_disk_prof
+        export CPUPROFILE=$prof
+        sudo bash -c "sync; echo 1 > /writable_proc/sys/vm/drop_caches"
+        LD_PRELOAD="/usr/lib/libprofiler.so" $decoder $file &> /dev/null
+        google-pprof --pdf $(which $decoder) $prof > ${prof}.pdf 2>/dev/null
+        rm -f $prof $prof_[0-9]*
     done
 fi

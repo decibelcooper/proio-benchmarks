@@ -11,7 +11,5 @@ for dir in tev13_pythia8_qcdjet_pt50; do
 
     decode_disk /mnt/output/$dir root
     decode_disk /mnt/output/$dir proio
-
-    decode_ram /mnt/output/$dir root
-    decode_ram /mnt/output/$dir proio
+    decode_disk /mnt/output/$dir proio _dyn
 done
