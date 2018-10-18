@@ -19,6 +19,6 @@ if [[ ! -f "$outputCSV" ]]; then
         sudo bash -c "sync; echo 1 > /writable_proc/sys/vm/drop_caches"
         LD_PRELOAD="/usr/lib/libprofiler.so" $decoder $file &> /dev/null
         google-pprof --pdf $(which $decoder) $prof > ${prof}.pdf 2>/dev/null
-        rm -f $prof $prof_[0-9]*
+        rm -f $prof ${prof}_[0-9]*
     done
 fi
