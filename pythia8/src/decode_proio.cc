@@ -8,6 +8,7 @@
 #include <time.h>
 #include <unistd.h>
 
+#include <proio/model/example/example.pb.h>
 #include <proio/reader.h>
 #include <proio/writer.h>
 
@@ -63,11 +64,9 @@ int main(int argc, char *argv[]) {
 
     std::cout << inputPath << ", " << buf.st_size << ", "
               << nEvents / double(procTimeAfter.tv_sec - procTimeBefore.tv_sec +
-                                  (procTimeAfter.tv_nsec - procTimeBefore.tv_nsec) * 1e-9)
-              << ", "
+                                  (procTimeAfter.tv_nsec - procTimeBefore.tv_nsec) * 1e-9) << ", "
               << nEvents / double(monoTimeAfter.tv_sec - monoTimeBefore.tv_sec +
-                                  (monoTimeAfter.tv_nsec - monoTimeBefore.tv_nsec) * 1e-9)
-              << std::endl;
+                                  (monoTimeAfter.tv_nsec - monoTimeBefore.tv_nsec) * 1e-9) << std::endl;
 
     exit(EXIT_SUCCESS);
 }
