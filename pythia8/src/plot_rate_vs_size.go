@@ -29,6 +29,7 @@ options:
 var (
 	output    = flag.String("output", "out.png", "output file")
 	logYScale = flag.Bool("logy", false, "logarithmic Y scale")
+	secondY   = flag.Bool("secondy", false, "plot the second y column instead of the first")
 )
 
 type XY struct{ X, Y float64 }
@@ -80,7 +81,11 @@ func main() {
 			var pt XY
 			pt.X, _ = strconv.ParseFloat(strings.Replace(record[1], " ", "", -1), 64)
 			pt.X /= (1 << 20)
-			pt.Y, _ = strconv.ParseFloat(strings.Replace(record[2], " ", "", -1), 64)
+			if *secondY {
+				pt.Y, _ = strconv.ParseFloat(strings.Replace(record[3], " ", "", -1), 64)
+			} else {
+				pt.Y, _ = strconv.ParseFloat(strings.Replace(record[2], " ", "", -1), 64)
+			}
 			if strings.HasPrefix(record[0], "packed_") {
 				pts = append(pts, pt)
 			} else {
