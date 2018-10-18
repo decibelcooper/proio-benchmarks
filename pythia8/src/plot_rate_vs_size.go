@@ -77,6 +77,9 @@ func main() {
 		if strings.HasSuffix(csvPath, "_root.csv") {
 			labelSuffix = "root"
 		}
+		if strings.HasSuffix(csvPath, "_dyn.csv") {
+			labelSuffix = "dynamic"
+		}
 		for _, record := range records {
 			var pt XY
 			pt.X, _ = strconv.ParseFloat(strings.Replace(record[1], " ", "", -1), 64)
@@ -106,6 +109,15 @@ func main() {
 			intS.GlyphStyle.Shape = draw.RingGlyph{}
 			intS.GlyphStyle.Color = pointColor
 			lineColor := color.RGBA{B: 255, A: 50}
+			l.LineStyle.Color = lineColor
+			intL.LineStyle.Color = lineColor
+		} else if labelSuffix == "dynamic" {
+			pointColor := color.RGBA{A: 255}
+			s.GlyphStyle.Shape = draw.BoxGlyph{}
+			s.GlyphStyle.Color = pointColor
+			intS.GlyphStyle.Shape = draw.SquareGlyph{}
+			intS.GlyphStyle.Color = pointColor
+			lineColor := color.RGBA{A: 50}
 			l.LineStyle.Color = lineColor
 			intL.LineStyle.Color = lineColor
 		} else {
