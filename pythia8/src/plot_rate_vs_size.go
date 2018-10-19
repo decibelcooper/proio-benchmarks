@@ -30,6 +30,7 @@ var (
 	output    = flag.String("output", "out.png", "output file")
 	logYScale = flag.Bool("logy", false, "logarithmic Y scale")
 	secondY   = flag.Bool("secondy", false, "plot the second y column instead of the first")
+	big       = flag.Bool("big", false, "make a big plot")
 )
 
 type XY struct{ X, Y float64 }
@@ -42,7 +43,7 @@ func main() {
 		log.Fatal("Invalid arguments")
 	}
 
-	axisFont, _ := vg.MakeFont("Times-Roman", 10)
+	axisFont, _ := vg.MakeFont("Times-Roman", 8)
 	tickFont, _ := vg.MakeFont("Times-Roman", 8)
 	legendFont, _ := vg.MakeFont("Times-Roman", 8)
 
@@ -112,7 +113,7 @@ func main() {
 			l.LineStyle.Color = lineColor
 			intL.LineStyle.Color = lineColor
 		} else if labelSuffix == "dynamic" {
-			pointColor := color.RGBA{A: 255}
+            pointColor := color.RGBA{A: 255}
 			s.GlyphStyle.Shape = draw.BoxGlyph{}
 			s.GlyphStyle.Color = pointColor
 			intS.GlyphStyle.Shape = draw.SquareGlyph{}
@@ -136,7 +137,11 @@ func main() {
 		p.Legend.Add("integer "+labelSuffix, intL, intS)
 	}
 
-	p.Save(3*vg.Inch, 3*vg.Inch, *output)
+	if *big {
+		p.Save(5*vg.Inch, 5*vg.Inch, *output)
+	} else {
+		p.Save(3*vg.Inch, 3*vg.Inch, *output)
+	}
 }
 
 type PreciseTicks struct {
