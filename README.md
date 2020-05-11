@@ -1,6 +1,6 @@
 # About
 This repository contains code for benchmarking
-[ProIO](https://github.com/go-proio).
+[ProIO](https://github.com/proio-org).
 
 # Usage
 To run these benchmarks, Docker must be installed on your system, and you must
